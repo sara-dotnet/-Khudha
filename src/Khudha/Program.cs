@@ -3,11 +3,18 @@ using System.Text.Unicode;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Data.SqlClient;
 
-var builder = WebApplication.CreateBuilder(args);
+var selfTest = args.Contains("--self-test", StringComparer.Ordinal);
+var builder = WebApplication.CreateBuilder(args.Where(arg => arg != "--self-test").ToArray());
+if (selfTest)
+{
+    KhudhaSelfTests.Run(new KhudhaCatalog(builder.Environment));
+    return;
+}
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Encoder = JavaScriptEncoder.Create(UnicodeRanges.All));
 builder.Services.AddDataProtection();
 builder.Services.AddSingleton<KhudhaAi>();
+builder.Services.AddSingleton<KhudhaCatalog>();
 builder.Services.AddSingleton<KhudhaFlow>();
 builder.WebHost.ConfigureKestrel(options => options.Limits.MaxRequestBodySize = 65536);
 
@@ -37,14 +44,20 @@ app.Use(async (context, next) =>
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
+app.MapGet("/api/catalog", async (HttpContext h, KhudhaFlow flow) =>
+    Results.Ok(await flow.CatalogAsync(h.RequestAborted)));
 app.MapGet("/api/fields", async (HttpContext h, KhudhaFlow flow) =>
     Results.Ok(await flow.FieldsAsync(h.RequestAborted)));
 app.MapGet("/api/session", async (HttpContext h, KhudhaFlow flow) =>
     Results.Ok(await flow.SnapshotAsync(h)));
 app.MapPost("/api/session", async (StartInput input, HttpContext h, KhudhaFlow flow) =>
     Results.Ok(await flow.StartAsync(input, h)));
-app.MapPost("/api/tasks", async (HttpContext h, KhudhaFlow flow) =>
-    Results.Ok(await flow.NewTaskAsync(h)));
+app.MapPost("/api/session/track", async (TrackInput input, HttpContext h, KhudhaFlow flow) =>
+    Results.Ok(await flow.SelectTrackAsync(input, h)));
+app.MapPost("/api/session/chat", async (ExploreInput input, HttpContext h, KhudhaFlow flow) =>
+    Results.Ok(await flow.ExploreAsync(input, h)));
+app.MapPost("/api/tasks", async (TaskStartInput input, HttpContext h, KhudhaFlow flow) =>
+    Results.Ok(await flow.NewTaskAsync(input, h)));
 app.MapPost("/api/tasks/{taskId:guid}/attempts", async
     (Guid taskId, AttemptInput input, HttpContext h, KhudhaFlow flow) =>
     Results.Ok(await flow.ReviewAsync(taskId, input, h)));

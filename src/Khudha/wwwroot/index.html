@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#091411">
   <title>خُضها — اكتشف مجالك بالتجربة</title>
-  <link rel="stylesheet" href="/styles.css">
-  <script src="/app.js" defer></script>
+  <link rel="stylesheet" href="/styles.css?v=review-3">
+  <script src="/app.js?v=review-3" defer></script>
 </head>
 <body>
   <a class="skip" href="#main">انتقل إلى المحتوى</a>
@@ -25,26 +25,111 @@
         <div class="journey-visual" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="visual-core">خُضها<span>تجربتك تبدأ هنا</span></div><div class="floating-pill pill-one"><b>01</b> تعرّف</div><div class="floating-pill pill-two"><b>02</b> جرّب</div><div class="floating-pill pill-three"><b>03</b> راجع وتقدّم</div><span class="orbit-dot dot-one"></span><span class="orbit-dot dot-two"></span></div>
       </div>
       <div id="resume-banner" class="resume-banner" hidden><div><strong>تجربتك بانتظارك</strong><p id="resume-description"></p></div><button id="resume-button" type="button" class="button secondary">متابعة التجربة <span>←</span></button></div>
-      <section class="start-section" aria-labelledby="start-heading"><div><p class="eyebrow">خطوتك الأولى</p><h2 id="start-heading">وش المجال اللي ودّك تخوضه؟</h2><p class="muted">تبدأ النسخة الحالية بتجربة تطوير المواقع.</p></div><form id="start-form" class="start-form"><div class="field"><label for="stage">مرحلتك الدراسية</label><select id="stage" required><option value="">اختر مرحلتك</option><option value="high-school">طالب ثانوي</option><option value="graduate">خريج ثانوي</option><option value="university">طالب جامعي</option></select></div><div class="field"><label for="field-select">المجال الذي تريد تجربته</label><select id="field-select" required><option value="">جارٍ تحميل المجالات…</option></select></div><button class="button primary" id="start-button" type="submit">ابدأ الاستكشاف <span>←</span></button></form></section>
+      <section class="start-section" aria-labelledby="start-heading">
+        <div><p class="eyebrow">خطوتك الأولى</p><h2 id="start-heading">وش التخصص اللي ودّك تستكشفه؟</h2><p class="muted">اختر علوم الحاسب أو إدارة الأعمال، وتعرّف قبل أن تبدأ.</p></div>
+        <form id="start-form" class="start-form">
+          <div class="field">
+            <label for="stage">مرحلتك الدراسية</label>
+            <select id="stage" required>
+              <option value="" disabled selected>اختر مرحلتك</option>
+              <option value="graduate">طالب ثانوي أو خريج</option>
+              <option value="university">طالب جامعي أو خريج</option>
+            </select>
+          </div>
+          <div class="field">
+            <label id="major-label" for="major-input">التخصص</label>
+            <div id="major-combobox" class="major-combobox">
+              <input id="major-input" class="major-input" type="text" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="major-options" aria-describedby="major-help" autocomplete="off" spellcheck="false" maxlength="120" required disabled placeholder="اختر مرحلتك أولاً">
+              <button id="major-toggle" class="major-toggle" type="button" aria-label="عرض اقتراحات التخصصات" aria-controls="major-options" disabled><span aria-hidden="true">⌄</span></button>
+              <div id="major-options" class="major-options" role="listbox" aria-label="اقتراحات التخصصات" hidden></div>
+            </div>
+            <span id="major-help" class="sr-only">التخصصان المتاحان علوم الحاسب وإدارة الأعمال. اكتب للبحث، واستخدم السهمين للتنقل وEnter للاختيار.</span>
+          </div>
+          <button class="button primary" id="start-button" type="submit">ابدأ الاستكشاف <span>←</span></button>
+        </form>
+      </section>
       <div class="value-grid"><article><span class="feature-number">01</span><h3>تعرّف قبل ما تقرر</h3><p>ابدأ بتعريف مختصر، ثم انتقل لتجربة ملموسة.</p></article><article><span class="feature-number">02</span><h3>خُض المهمة بنفسك</h3><p>خطوات واضحة، وتلميح يساعدك وقت ما تحتاجه.</p></article><article><span class="feature-number">03</span><h3>راجع، ثم واصل</h3><p>اعرف ما أنجزته وما يحتاج تحسيناً، ثم جرّب خطوة أخرى.</p></article></div>
     </section>
 
     <section id="experience-view" hidden>
-      <div class="experience-heading"><div><p id="student-label" class="eyebrow"></p><h1 id="field-title" class="experience-title"></h1><p class="muted">كل محاولة تعرّفك على المجال أكثر.</p></div><button id="new-experience" class="button quiet" type="button">استكشاف من البداية</button></div>
+      <div class="experience-heading"><div><p id="student-label" class="eyebrow"></p><h1 id="field-title" class="experience-title"></h1><p id="profile-major" class="profile-major" hidden></p><p class="muted">تعرّف، اسأل، ثم خُض التجربة بنفسك.</p></div><div class="experience-actions"><button id="back-to-overview" class="button quiet" type="button" hidden>التعريف والمسارات</button><button id="new-experience" class="button quiet" type="button">استكشاف من البداية</button></div></div>
+
+      <section id="routing-repair" class="card routing-repair" role="alert" hidden>
+        <p class="eyebrow">تجربة محفوظة تحتاج تحديث الربط</p>
+        <h2>نبدأ بمهام تطابق تخصصك</h2>
+        <p id="routing-repair-message"></p>
+        <button id="repair-session-button" class="button primary" type="button">ابدأ التجربة الصحيحة <span>←</span></button>
+      </section>
+
+      <div id="orientation-workspace" class="orientation-layout" hidden>
+        <div class="orientation-main">
+          <section class="card major-introduction" aria-labelledby="orientation-title">
+            <p id="orientation-eyebrow" class="eyebrow"></p>
+            <h2 id="orientation-title"></h2>
+            <p id="major-summary" class="intro-summary"></p>
+            <div id="major-sections" class="major-sections"></div>
+          </section>
+          <section id="tracks-section" class="card tracks-section" aria-labelledby="tracks-heading" hidden>
+            <p class="eyebrow">مسارات داخل تخصصك</p>
+            <h2 id="tracks-heading">أي مسار ودّك تخوضه؟</h2>
+            <p id="tracks-help" class="muted small">تعرّف على الخيارين واسأل الوكيل، ثم اختر المسار الذي تريد تجربته.</p>
+            <div id="track-options" class="track-options" role="group" aria-labelledby="tracks-heading"></div>
+          </section>
+          <p id="learning-plan-prompt" class="inline-note" hidden>اختر مسارك ليظهر درس التجربة، والمثال، وخطة المهام قبل البدء.</p>
+          <section id="learning-plan-card" class="card learning-plan-card" aria-labelledby="learning-plan-title" hidden>
+            <div class="card-top"><p class="eyebrow">قبل أن تبدأ المهام</p><span id="learning-task-count" class="small-badge"></span></div>
+            <h2 id="learning-plan-title"></h2>
+            <p id="learning-plan-goal" class="intro-summary"></p>
+            <div id="lesson-sections" class="major-sections"></div>
+            <section class="worked-example" aria-labelledby="lesson-example-title">
+              <p class="eyebrow">مثال توضيحي ببيانات مختلفة</p>
+              <h3 id="lesson-example-title"></h3>
+              <p id="lesson-example-scenario"></p>
+              <ol id="lesson-example-steps"></ol>
+              <pre id="lesson-example-code-wrap" dir="ltr" hidden><code id="lesson-example-code"></code></pre>
+              <p id="lesson-example-takeaway" class="example-takeaway"></p>
+            </section>
+            <h3 class="lesson-subheading">خطة المهام</h3>
+            <ol id="learning-task-outline" class="learning-task-outline"></ol>
+            <h3 class="lesson-subheading">كيف تمشي التجربة؟</h3>
+            <ol id="learning-mechanism" class="learning-mechanism"></ol>
+          </section>
+          <section class="card orientation-next">
+            <div><p id="orientation-next-title" class="eyebrow"></p><p id="orientation-next-description" class="muted small"></p></div>
+            <button id="orientation-generate-button" type="button" class="button primary">جهّز مهمتي الأولى <span>←</span></button>
+          </section>
+          <details class="references"><summary>مصادر التعريف والمسارات</summary><ul id="exploration-references"></ul></details>
+        </div>
+        <aside class="orientation-aside">
+          <section class="card assistant-card exploration-chat">
+            <div class="assistant-heading"><span class="assistant-symbol">✦</span><div><h2>اسأل قبل أن تبدأ</h2><p id="explore-chat-subtitle">وكيلك يساعدك تفهم التخصص</p></div></div>
+            <div id="explore-messages" class="messages" aria-live="polite"></div>
+            <form id="explore-question-form" class="question-form">
+              <label class="sr-only" for="explore-question">سؤالك عن التخصص أو مساراته</label>
+              <textarea id="explore-question" rows="3" maxlength="1000" required placeholder="اسأل عن التخصص أو عن مصطلح جديد عليك…"></textarea>
+              <button id="explore-ask-button" type="submit" class="button secondary">أرسل سؤالي <span>←</span></button>
+            </form>
+          </section>
+        </aside>
+      </div>
+
+      <div id="task-experience">
       <div class="path-strip" aria-label="رحلة التجربة"><span id="step-intro">01 <b>تعرّف</b></span><span id="step-task">02 <b>جرّب</b></span><span id="step-review">03 <b>راجع</b></span><span id="step-next">04 <b>واصل</b></span></div>
-      <section class="overview card"><div><p class="eyebrow">عن التجربة</p><p id="field-overview"></p></div><div class="progress-badge"><strong id="completed-count">0</strong><span>مهام مكتملة</span></div></section>
+      <section class="overview card"><div><p class="eyebrow">عن التجربة</p><p id="field-overview"></p></div><div class="progress-badge"><strong id="completed-count">0</strong><span id="progress-caption">مهام مكتملة</span></div></section>
       <div id="empty-task" class="empty-task card"><span class="empty-icon">✦</span><h2>جاهز تخوض أول مهمة؟</h2><p class="muted">سيجهّز الوكيل مهمة تمهيدية، بتعليمات ومعايير واضحة للمراجعة.</p><button id="generate-button" class="button primary" type="button">جهّز مهمتي الأولى <span>←</span></button></div>
 
       <div id="workspace" class="workspace" hidden>
         <div class="task-column">
-          <section class="card task-card"><div class="card-top"><span id="task-number" class="eyebrow"></span><span id="task-source" class="small-badge"></span></div><h2 id="task-title"></h2><div id="fallback-note" class="inline-note" hidden>تعذّر توليد مهمة جديدة، فاستُخدم قالب جاهز مؤقتاً. المراجعة والتلميحات تتطلبان اتصال الوكيل.</div><ol id="instructions" class="instructions"></ol><div class="deliverable"><span>المطلوب تسليمه</span><p id="deliverable"></p></div><h3 class="small-heading">متى تكتمل المهمة؟</h3><ul id="criteria" class="criteria"></ul><details class="starter-hint"><summary>تلميح يساعدك على البداية</summary><p id="starter-hint"></p></details></section>
-          <section class="card submission-card"><div class="card-top"><h2>خُض المحاولة</h2><span class="muted small">الكود كنص</span></div><p class="muted small">اكتب محاولتك هنا، واستخدم بيانات خيالية.</p><form id="attempt-form"><label class="sr-only" for="submission">نص محاولتك</label><textarea id="submission" maxlength="10000" rows="8" dir="ltr" spellcheck="false" placeholder="اكتب كود HTML هنا…" required></textarea><div class="submission-footer"><span id="draft-status" class="muted small">تُحفظ المسودة في هذا المتصفح.</span><button id="review-button" class="button primary" type="submit">راجع محاولتي <span>←</span></button></div></form><div id="saved-status" class="inline-note" hidden></div></section>
+          <section class="card task-card"><div class="card-top"><span id="task-number" class="eyebrow"></span><span id="task-source" class="small-badge"></span></div><h2 id="task-title"></h2><div id="fallback-note" class="inline-note" hidden>تعذّر تجهيز التلميح الذكي، فظهر تلميح المهمة المحضّر. تُراجع محاولتك وفق المعايير نفسها.</div><ol id="instructions" class="instructions"></ol><div class="deliverable"><span>المطلوب تسليمه</span><p id="deliverable"></p></div><h3 class="small-heading">متى تكتمل المهمة؟</h3><ul id="criteria" class="criteria"></ul><details class="starter-hint"><summary>تلميح يساعدك على البداية</summary><p id="starter-hint"></p></details></section>
+          <section class="card submission-card"><div class="card-top"><h2>خُض المحاولة</h2><span id="submission-kind" class="muted small">محاولتك كنص</span></div><p class="muted small">اكتب محاولتك هنا، واستخدم بيانات خيالية.</p><form id="attempt-form"><label class="sr-only" for="submission">نص محاولتك</label><textarea id="submission" maxlength="10000" rows="8" dir="auto" spellcheck="false" placeholder="اكتب محاولتك هنا…" required></textarea><div class="submission-footer"><span id="draft-status" class="muted small">تُحفظ المسودة في هذا المتصفح.</span><button id="review-button" class="button primary" type="submit">راجع محاولتي <span>←</span></button></div></form><div id="saved-status" class="inline-note" hidden></div></section>
           <section id="review-card" class="card review-card" aria-live="polite" hidden><div class="card-top"><h2>مراجعة محاولتك</h2><span id="review-status" class="small-badge"></span></div><p class="muted small">ملاحظات إرشادية وفق معايير المهمة.</p><div id="strengths-section"><h3 class="small-heading">ما أنجزته</h3><ul id="strengths" class="feedback-list positive"></ul></div><div id="improvements-section"><h3 class="small-heading">خطوتك للتحسين</h3><ul id="improvements" class="feedback-list"></ul></div><p id="review-hint" class="review-hint"></p></section>
           <div id="next-card" class="next-card" hidden><div><h3>خطوة أنجزتها، وتجربة تنتظرك</h3><p class="muted small">محاولتك ومراجعتها محفوظتان. واصل على ما تعلمته.</p></div><button id="next-button" class="button primary" type="button">المهمة التالية <span>←</span></button></div>
+          <section id="course-complete-card" class="card course-complete-card" hidden><p class="eyebrow">أكملت تجربة التعلم</p><h2>خطوات أنجزتها، وفكرة أوضح عن المجال</h2><p class="muted small">محاولاتك ومراجعاتها محفوظة. راجع ما تعلمته أو ابدأ استكشاف تخصص أو مسار آخر.</p><button id="finish-experience" class="button secondary" type="button">استكشف تجربة أخرى <span>←</span></button></section>
         </div>
         <aside class="assistant-column"><section class="card assistant-card"><div class="assistant-heading"><span class="assistant-symbol">✦</span><div><h2>وكيلك في التجربة</h2><p><span class="status-dot"></span> شرح وتلميح، خطوة بخطوة</p></div></div><div id="messages" class="messages" aria-live="polite"></div><form id="question-form" class="question-form"><label class="sr-only" for="question">سؤالك للوكيل</label><textarea id="question" rows="2" maxlength="1000" required placeholder="اسأل عن خطوة ما فهمتها…"></textarea><button id="ask-button" class="button secondary" type="submit">أرسل سؤالي <span>←</span></button></form></section><section class="card history-card"><p class="eyebrow">خطوات خضتها</p><ul id="history" class="history"></ul></section></aside>
       </div>
       <details class="references"><summary>مراجع التجربة</summary><ul id="references"></ul></details>
+      </div>
     </section>
   </main>
   <footer class="wrap footer"><a class="brand small-brand" href="/">خُضها<span class="brand-dot">.</span></a><span>المجال يُفهم أكثر… لما تخوضه.</span><span>سارة لطفي · سارة زكي</span></footer>
