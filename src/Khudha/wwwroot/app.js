@@ -1,7 +1,7 @@
 'use strict';
 const byId = id => document.getElementById(id);
 const state = { catalog: [], snapshot: null, sessionId: null, taskId: null, busy: false,
-  lastAttempt: null, majorOptions: [], majorActive: -1, orientationOpen: true };
+  lastAttempt: null, majorOptions: [], majorActive: -1, orientationOpen: true, homeMajor: null };
 const show = (id, visible) => { byId(id).hidden = !visible; };
 const text = (id, value) => { byId(id).textContent = value ?? ''; };
 function notice(message = '') { text('notice', message); show('notice', !!message); }
@@ -24,6 +24,8 @@ function syncButtons() {
   byId('major-input').disabled = state.busy || !byId('stage').value;
   byId('major-toggle').disabled = byId('major-input').disabled;
   byId('start-button').disabled = state.busy || state.catalog.length !== 2;
+  for (const id of ['home-major-cs', 'home-major-business'])
+    byId(id).disabled = state.busy || state.catalog.length !== 2;
   byId('orientation-generate-button').disabled = state.busy || !state.snapshot?.exploration?.canGenerate || !state.snapshot?.learningPlan;
   if (state.snapshot?.routingIssue) {
     for (const id of ['generate-button', 'review-button', 'next-button', 'ask-button', 'explore-ask-button', 'orientation-generate-button'])
@@ -95,6 +97,7 @@ function activateMajor(index) {
   active.scrollIntoView({ block: 'nearest' });
 }
 function chooseMajor(major) {
+  state.homeMajor = null;
   byId('major-input').value = major;
   byId('major-input').setCustomValidity('');
   byId('major-input').focus();
@@ -120,7 +123,27 @@ function view(name) {
   show('home-view', name === 'home'); show('experience-view', name === 'experience');
   byId('home-nav').classList.toggle('active', name === 'home');
   byId('experience-nav').classList.toggle('active', name === 'experience');
+  byId('main-navigation').classList.remove('open');
+  byId('nav-menu-toggle').setAttribute('aria-expanded', 'false');
   if (name === 'experience') window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function openHomeSection(id) {
+  view('home');
+  byId(id).scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function exploreHomeMajor(slug) {
+  if (state.busy) return;
+  const major = matchingMajor(slug);
+  if (!major) return;
+  openHomeSection('start-section');
+  if (!byId('stage').value) {
+    // Remember the card only until the user chooses their education stage.
+    state.homeMajor = major.name;
+    byId('stage').focus();
+  } else {
+    updateMajorField(major.name);
+    chooseMajor(major.name);
+  }
 }
 function list(id, values) {
   byId(id).replaceChildren(...values.map(value => {
@@ -227,6 +250,17 @@ function renderOrientation(exploration, task) {
     const example = document.createElement('span'); example.className = 'track-example'; example.textContent = 'في تجربتك: ' + track.example;
     const skills = document.createElement('span'); skills.className = 'track-skills'; skills.textContent = track.skills.join(' · ');
     const fit = document.createElement('span'); fit.className = 'track-fit'; fit.textContent = track.fit;
+    const illustrations = {
+      'web-development': 'web-development', 'data-analysis': 'data-analysis',
+      'marketing': 'marketing', 'operations': 'operations'
+    };
+    if (Object.hasOwn(illustrations, track.slug)) {
+      const cover = document.createElement('span'); cover.className = 'track-art';
+      const image = document.createElement('img');
+      image.src = `/assets/khudha/${illustrations[track.slug]}.svg`;
+      image.alt = ''; image.setAttribute('aria-hidden', 'true');
+      cover.append(image); card.append(cover);
+    }
     card.append(top, name, description, example, skills, fit);
     card.addEventListener('click', () => selectTrack(track.slug));
     return card;
@@ -271,6 +305,9 @@ function render(snapshot) {
   text('field-overview', session.field?.overview || snapshot.exploration?.major.summary || '');
   text('completed-count', snapshot.progress.completed);
   text('progress-caption', `مكتملة من ${snapshot.progress.total || snapshot.learningPlan?.taskCount || 3}`);
+  byId('experience-progress').max = snapshot.progress.total || snapshot.learningPlan?.taskCount || 3;
+  byId('experience-progress').value = snapshot.progress.completed;
+  byId('experience-progress').setAttribute('aria-valuetext', `${snapshot.progress.completed} مهام مكتملة من ${byId('experience-progress').max}`);
   byId('stage').value = session.stage === 'high-school' ? 'graduate' : session.stage;
   updateMajorField(session.major ?? '');
   if (repair) {
@@ -325,6 +362,7 @@ function render(snapshot) {
   text('review-button', pending ? 'إعادة المراجعة ←' : task.status === 'Completed' ? 'اكتملت المهمة ✓' : 'راجع محاولتي ←');
 
   const review = attempt?.review;
+  byId('review-card').classList.toggle('review-complete', !!review?.completed);
   show('review-card', !!review);
   show('next-card', task.status === 'Completed' && !snapshot.experienceComplete);
   show('course-complete-card', !!snapshot.experienceComplete);
@@ -353,6 +391,31 @@ function render(snapshot) {
 }
 
 byId('home-nav').addEventListener('click', () => view('home'));
+byId('brand-home').addEventListener('click', () => view('home'));
+byId('footer-home').addEventListener('click', () => { view('home'); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+byId('nav-explore').addEventListener('click', () => openHomeSection('home-majors'));
+byId('nav-how').addEventListener('click', () => openHomeSection('how'));
+byId('footer-how').addEventListener('click', () => openHomeSection('how'));
+for (const id of ['nav-start', 'footer-start'])
+  byId(id).addEventListener('click', () => {
+    openHomeSection('start-section');
+    if (!state.busy) byId(byId('stage').value ? 'major-input' : 'stage').focus();
+  });
+byId('nav-menu-toggle').addEventListener('click', () => {
+  const open = byId('nav-menu-toggle').getAttribute('aria-expanded') !== 'true';
+  byId('nav-menu-toggle').setAttribute('aria-expanded', String(open));
+  byId('main-navigation').classList.toggle('open', open);
+});
+for (const id of ['main-navigation', 'nav-menu-toggle'])
+  byId(id).addEventListener('keydown', event => {
+    if (event.key === 'Escape') {
+      byId('main-navigation').classList.remove('open');
+      byId('nav-menu-toggle').setAttribute('aria-expanded', 'false');
+      byId('nav-menu-toggle').focus();
+    }
+  });
+byId('home-major-cs').addEventListener('click', () => exploreHomeMajor('computer-science'));
+byId('home-major-business').addEventListener('click', () => exploreHomeMajor('business-administration'));
 byId('experience-nav').addEventListener('click', () => view('experience'));
 byId('resume-button').addEventListener('click', () => view('experience'));
 byId('new-experience').addEventListener('click', () => { view('home'); byId('stage').focus(); });
@@ -372,7 +435,11 @@ byId('repair-session-button').addEventListener('click', async () => {
 byId('back-to-overview').addEventListener('click', () => {
   saveDraft(); state.orientationOpen = true; render(state.snapshot); view('experience');
 });
-byId('stage').addEventListener('change', () => updateMajorField());
+byId('stage').addEventListener('change', () => {
+  const suggested = state.homeMajor;
+  state.homeMajor = null;
+  updateMajorField(suggested || '');
+});
 byId('major-input').addEventListener('focus', () => openMajorOptions());
 byId('major-input').addEventListener('click', () => openMajorOptions());
 byId('major-input').addEventListener('input', () => {
@@ -467,7 +534,7 @@ byId('explore-question-form').addEventListener('submit', async event => {
   if (state.busy || !state.snapshot?.exploration) return;
   const question = byId('explore-question').value.trim();
   if (!question || question.length > 1000) { notice('اكتب سؤالك في حد أقصى 1000 حرف.'); return; }
-  notice(); busy(true, 'الوكيل يوضح لك التخصص ومساراته…');
+  notice(); busy(true, state.snapshot.session.stage === 'university' ? 'الوكيل يوضح لك المسارات…' : 'الوكيل يوضح لك التخصص…');
   try {
     render(await api('/api/session/chat', { question }));
     byId('explore-question').value = '';
