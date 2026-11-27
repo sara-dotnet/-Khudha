@@ -133,7 +133,7 @@ public sealed class KhudhaFlow
             session = await RequireSessionAsync(h);
             var major = _catalog.FindMajor(session.MajorSlug ?? session.Major)
                 ?? throw new FlowFault(400, "ابدئي تجربة بأحد التخصصين للاستفسار عنه.");
-            var references = await ExplorationReferencesAsync(major, ct);
+            var references = await ExplorationReferencesAsync(major, ct, session.Stage == "university");
             var messages = await ExplorationMessagesAsync(session.Id, ct);
             // A retry after provider failure reuses the pending question.
             var retry = IsPendingQuestion(messages, question);
@@ -147,7 +147,7 @@ public sealed class KhudhaFlow
             string answer;
             try
             {
-                answer = await _ai.ExploreAsync(Stages[session.Stage], major, track,
+                answer = await _ai.ExploreAsync(session.Stage, Stages[session.Stage], major, track,
                     references.Notes, question,
                     JsonSerializer.Serialize(contextMessages.TakeLast(8), KhudhaAi.Json), ct,
                     (session.Stage == "university" ? major.Tracks.Select(t => t.Slug) : new[] { major.IntroExperienceSlug })
@@ -223,7 +223,9 @@ public sealed class KhudhaFlow
                 _logger.LogWarning("Task generation unavailable: {Reason}", error.Message);
                 content = prepared with { Source = "template" };
             }
-            content = content with { StarterCode = previous.FirstOrDefault() };
+            // Only the web tasks extend the previous submission as editable code.
+            // Independent written tasks start with an empty answer.
+            content = content with { StarterCode = field.Slug == "web-development" ? previous.FirstOrDefault() : null };
             await ExecuteAsync("""
                 INSERT dbo.Tasks(Id, SessionId, FieldId, TemplateId, SequenceNumber, Difficulty, TaskJson)
                 VALUES(@id,@session,@field,@template,@number,@difficulty,@json);
@@ -365,7 +367,7 @@ public sealed class KhudhaFlow
         FieldRow? field = session.FieldId.HasValue ? await FieldAsync(session.FieldId.Value, ct) : null;
         (string Notes, object Sources) references;
         if (field is not null) references = await ReferencesAsync(field.Id, ct);
-        else if (major is not null) references = await ExplorationReferencesAsync(major, ct);
+        else if (major is not null) references = await ExplorationReferencesAsync(major, ct, session.Stage == "university");
         else references = ("", Array.Empty<object>());
         var tasks = await TasksAsync(id, ct);
         var routingIssue = RoutingIssue(session, field, tasks);
@@ -387,7 +389,7 @@ public sealed class KhudhaFlow
         {
             var selectedSlug = session.TrackSlug;
             var selectedTrack = major.Tracks.FirstOrDefault(t => t.Slug == selectedSlug);
-            var explorationReferences = await ExplorationReferencesAsync(major, ct);
+            var explorationReferences = await ExplorationReferencesAsync(major, ct, session.Stage == "university");
             exploration = new
             {
                 major, selectedTrack,
@@ -496,14 +498,17 @@ public sealed class KhudhaFlow
             rows.Select(r => new { r.title, r.url }).ToArray());
     }
 
-    private async Task<(string Notes, object Sources)> ExplorationReferencesAsync(MajorDefinition major, CancellationToken ct)
+    private async Task<(string Notes, object Sources)> ExplorationReferencesAsync(MajorDefinition major, CancellationToken ct,
+        bool includeTracks)
     {
         var rows = await ReadAsync("""
             SELECT r.Title,r.SourceUrl,r.ReferenceText
             FROM dbo.FieldReferences r INNER JOIN dbo.Fields f ON f.Id=r.FieldId
             WHERE f.Slug IN (@intro,@track1,@track2) ORDER BY r.Id;
             """, r => new ReferenceDefinition(r.GetString(0), r.GetString(1), r.GetString(2)), ct,
-            ("@intro", major.IntroExperienceSlug), ("@track1", major.Tracks[0].Slug), ("@track2", major.Tracks[1].Slug));
+            ("@intro", major.IntroExperienceSlug),
+            ("@track1", includeTracks ? major.Tracks[0].Slug : major.IntroExperienceSlug),
+            ("@track2", includeTracks ? major.Tracks[1].Slug : major.IntroExperienceSlug));
         var unique = rows.DistinctBy(r => r.Url).ToArray();
         if (unique.Length == 0) throw new FlowFault(503, "مراجع التخصص غير جاهزة. أعيدي تحميل الصفحة.");
         return (string.Join("\n\n", unique.Select(r => $"{r.Title}: {r.Notes}\nSource: {r.Url}")),

@@ -66,6 +66,33 @@ public static class KhudhaSelfTests
             "allow the same question again after an answer");
         Check(!KhudhaFlow.IsPendingQuestion(new[] { user }, "سؤال مختلف."),
             "keep a different question as a new message");
+
+        foreach (var major in catalog.Majors)
+        {
+            var allPlans = new[] { catalog.LearningPlan(major.IntroExperienceSlug)! }
+                .Concat(major.Tracks.Select(track => catalog.LearningPlan(track.Slug)!)).ToArray();
+            var secondary = System.Text.Json.JsonSerializer.SerializeToElement(
+                KhudhaAi.ExplorationData("graduate", major, major.Tracks[0], allPlans), KhudhaAi.Json);
+            Check(!secondary.TryGetProperty("availableTracks", out _) &&
+                !secondary.TryGetProperty("selectedTrack", out _) &&
+                secondary.GetProperty("phase").GetString() == "secondary-major-introduction",
+                "secondary context has no track-choice menu: " + major.Slug);
+            Check(secondary.GetProperty("introductoryLearningPlan").GetProperty("experienceSlug").GetString() == major.IntroExperienceSlug,
+                "secondary context uses the introductory lesson only: " + major.Slug);
+            var university = System.Text.Json.JsonSerializer.SerializeToElement(
+                KhudhaAi.ExplorationData("university", major, major.Tracks[0], allPlans), KhudhaAi.Json);
+            Check(university.GetProperty("availableTracks").GetArrayLength() == 2 &&
+                university.GetProperty("learningPlans").GetArrayLength() == 2 &&
+                university.GetProperty("selectedTrack").GetProperty("slug").GetString() == major.Tracks[0].Slug &&
+                university.GetProperty("learningPlans").EnumerateArray()
+                    .All(plan => plan.GetProperty("experienceSlug").GetString() != major.IntroExperienceSlug),
+                "university context contains its two track choices only: " + major.Slug);
+        }
+        Check(KhudhaAi.ExplorationRules("graduate").Contains("NO track-selection step", StringComparison.Ordinal) &&
+            KhudhaAi.ExplorationRules("high-school") == KhudhaAi.ExplorationRules("graduate"),
+            "secondary and legacy school stage use the major-introduction rule");
+        Check(KhudhaAi.ExplorationRules("university").Contains("university-track-exploration", StringComparison.Ordinal),
+            "university stage receives its separate track rule");
         Console.WriteLine($"SUCCESS: {checks} checks passed. No SQL Server or Gemini requests were made.");
     }
 }

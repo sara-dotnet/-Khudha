@@ -57,10 +57,10 @@ function closeMajorOptions() {
   byId('major-input').removeAttribute('aria-activedescendant');
   state.majorActive = -1;
 }
-function openMajorOptions() {
+function openMajorOptions(filterByInput = false) {
   const input = byId('major-input');
   if (input.disabled) return;
-  const query = normalizeMajor(input.value);
+  const query = filterByInput ? normalizeMajor(input.value) : '';
   state.majorOptions = state.catalog.filter(major => [major.name, ...(major.aliases || [])]
     .some(name => normalizeMajor(name).includes(query)));
   state.majorActive = -1;
@@ -78,7 +78,7 @@ function openMajorOptions() {
   if (!nodes.length) {
     const note = document.createElement('div');
     note.className = 'major-empty';
-    note.textContent = 'التخصصان المتاحان في النموذج هما علوم الحاسب وإدارة الأعمال. اختر أحدهما للمتابعة.';
+    note.textContent = 'ما فيه تخصص مطابق. افتح القائمة لعرض التخصصات المتاحة.';
     nodes.push(note);
   }
   byId('major-options').replaceChildren(...nodes);
@@ -313,7 +313,9 @@ function render(snapshot) {
     text('draft-status', 'هذه الإجابة المحفوظة التي تمت مراجعتها وقبولها.');
     if (changed) byId('question').value = '';
   } else if (changed) {
-    byId('submission').value = readDraft(task.id) ?? attempt?.submission ?? content.starterCode ?? '';
+    // Older saved tasks may include a previous written answer as starterCode.
+    // Keep real drafts/attempts, and only prefill code for the cumulative web tasks.
+    byId('submission').value = readDraft(task.id) ?? attempt?.submission ?? (code ? content.starterCode : '') ?? '';
     byId('question').value = '';
     text('draft-status', 'تُحفظ المسودة في هذا المتصفح.');
   }
@@ -371,11 +373,11 @@ byId('back-to-overview').addEventListener('click', () => {
   saveDraft(); state.orientationOpen = true; render(state.snapshot); view('experience');
 });
 byId('stage').addEventListener('change', () => updateMajorField());
-byId('major-input').addEventListener('focus', openMajorOptions);
-byId('major-input').addEventListener('click', openMajorOptions);
+byId('major-input').addEventListener('focus', () => openMajorOptions());
+byId('major-input').addEventListener('click', () => openMajorOptions());
 byId('major-input').addEventListener('input', () => {
   byId('major-input').setCustomValidity('');
-  openMajorOptions();
+  openMajorOptions(true);
 });
 byId('major-input').addEventListener('keydown', event => {
   if (event.isComposing) return;
@@ -416,7 +418,7 @@ byId('start-form').addEventListener('submit', async event => {
   event.preventDefault(); if (state.busy) return;
   const major = matchingMajor(byId('major-input').value);
   if (!major) {
-    byId('major-input').setCustomValidity('اختر علوم الحاسب أو إدارة الأعمال للمتابعة.');
+    byId('major-input').setCustomValidity('اختر تخصصًا من الاقتراحات المتاحة للمتابعة.');
     byId('major-input').reportValidity();
     return;
   }
