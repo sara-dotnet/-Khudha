@@ -1,7 +1,30 @@
+
 'use strict';
 const byId = id => document.getElementById(id);
 const state = { catalog: [], snapshot: null, sessionId: null, taskId: null, busy: false,
   lastAttempt: null, majorOptions: [], majorActive: -1, orientationOpen: true, homeMajor: null };
+
+function createRequestId() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  // randomUUID may be unavailable on HTTP; getRandomValues remains available in modern browsers.
+  if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    const hex = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  }
+  // Last-resort compatibility fallback for very old browsers without Web Crypto.
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, char => {
+    const random = Math.floor(Math.random() * 16);
+    const value = char === 'x' ? random : (random & 0x03) | 0x08;
+    return value.toString(16);
+  });
+}
+
 const show = (id, visible) => { byId(id).hidden = !visible; };
 const text = (id, value) => { byId(id).textContent = value ?? ''; };
 function notice(message = '') { text('notice', message); show('notice', !!message); }
@@ -551,7 +574,7 @@ byId('attempt-form').addEventListener('submit', async event => {
   if (!submission) { notice('اكتب محاولتك قبل إرسالها للمراجعة.'); return; }
   const existing = state.lastAttempt;
   const requestId = existing && existing.submission === submission && ['Pending', 'Failed'].includes(existing.status)
-    ? existing.id : crypto.randomUUID();
+    ? existing.id : createRequestId();
   state.lastAttempt = { id: requestId, submission, status: 'Pending' };
   saveDraft(); notice(); busy(true, 'نحفظ محاولتك، والوكيل يراجعها وفق المعايير…');
   try {
